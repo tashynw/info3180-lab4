@@ -3,8 +3,9 @@ from app import app, db, login_manager
 from flask import render_template, request, redirect, url_for, flash, session, abort
 from flask_login import login_user, logout_user, current_user, login_required
 from werkzeug.utils import secure_filename
+from werkzeug.security import check_password_hash
 from app.models import UserProfile
-from app.forms import LoginForm
+from app.forms import LoginForm, UploadForm
 
 
 ###
@@ -24,17 +25,24 @@ def about():
 
 
 @app.route('/upload', methods=['POST', 'GET'])
+@login_required
 def upload():
     # Instantiate your form class
-
+    form = UploadForm()
     # Validate file upload on submit
     if form.validate_on_submit():
         # Get file data and save to your uploads folder
+        file = form.image.data
+        filename = secure_filename(file.filename)
 
+        file.save(os.path.join(
+            app.config["UPLOAD_FOLDER"], filename
+        ))
         flash('File Saved', 'success')
-        return redirect(url_for('home')) # Update this to redirect the user to a route that displays all uploaded image files
+        # Update this to redirect the user to a route that displays all uploaded image files
+        return redirect(url_for('home'))
 
-    return render_template('upload.html')
+    return render_template('upload.html', form=form)
 
 
 @app.route('/login', methods=['POST', 'GET'])
@@ -43,7 +51,7 @@ def login():
 
     # change this to actually validate the entire form submission
     # and not just one field
-    if form.username.data:
+    if form.validate_on_submit():
         # Get the username and password values from the form.
 
         # Using your model, query database for a user based on the username
@@ -53,14 +61,26 @@ def login():
         # passed to the login_user() method below.
 
         # Gets user id, load into session
+        user = db.first_or_404(db.select(UserProfile).filter_by(
+            username=form.data["username"]))
+
+        if not user or not check_password_hash(user.password, form.data["password"]):
+            flash("Login failed ❌")
+            return redirect(url_for("login", form=form))
+
         login_user(user)
 
         # Remember to flash a message to the user
-        return redirect(url_for("home"))  # The user should be redirected to the upload form instead
+        # The user should be redirected to the upload form instead
+        flash("Login successfully ✅")
+        return redirect(url_for("upload"))
+
     return render_template("login.html", form=form)
 
 # user_loader callback. This callback is used to reload the user object from
 # the user ID stored in the session
+
+
 @login_manager.user_loader
 def load_user(id):
     return db.session.execute(db.select(UserProfile).filter_by(id=id)).scalar()
@@ -70,13 +90,16 @@ def load_user(id):
 ###
 
 # Flash errors from the form if validation fails
+
+
 def flash_errors(form):
     for field, errors in form.errors.items():
         for error in errors:
             flash(u"Error in the %s field - %s" % (
                 getattr(form, field).label.text,
                 error
-), 'danger')
+            ), 'danger')
+
 
 @app.route('/<file_name>.txt')
 def send_text_file(file_name):
