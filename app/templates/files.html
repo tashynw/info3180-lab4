@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 
 {% block main %}
-<ul>
+<div style="display: grid;grid-template-columns: 3fr 3fr 3fr;gap: 50px;width: 100%;">
   {% for image in images %}
-    <li style="margin-bottom: 15px;"><img src="{{ url_for('get_image', filename=image) }}" width="800" height="500"/></li>
+    <img src="{{ url_for('get_image', filename=image) }}" width="400" height="250"/>
   {% endfor %}
-</ul>
+</div>
 {% endblock %}
