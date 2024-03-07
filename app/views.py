@@ -94,6 +94,14 @@ def login():
 # the user ID stored in the session
 
 
+@app.route('/logout')
+def logout():
+    logout_user()
+
+    flash("User signed out")
+    return redirect(url_for("home"))
+
+
 @login_manager.user_loader
 def load_user(id):
     return db.session.execute(db.select(UserProfile).filter_by(id=id)).scalar()
