@@ -28,11 +28,9 @@ def about():
 @app.route('/upload', methods=['POST', 'GET'])
 @login_required
 def upload():
-    # Instantiate your form class
     form = UploadForm()
-    # Validate file upload on submit
+
     if form.validate_on_submit():
-        # Get file data and save to your uploads folder
         file = form.image.data
         filename = secure_filename(file.filename)
 
@@ -62,18 +60,7 @@ def files():
 def login():
     form = LoginForm()
 
-    # change this to actually validate the entire form submission
-    # and not just one field
     if form.validate_on_submit():
-        # Get the username and password values from the form.
-
-        # Using your model, query database for a user based on the username
-        # and password submitted. Remember you need to compare the password hash.
-        # You will need to import the appropriate function to do so.
-        # Then store the result of that query to a `user` variable so it can be
-        # passed to the login_user() method below.
-
-        # Gets user id, load into session
         user = db.first_or_404(db.select(UserProfile).filter_by(
             username=form.data["username"]))
 
@@ -83,8 +70,6 @@ def login():
 
         login_user(user)
 
-        # Remember to flash a message to the user
-        # The user should be redirected to the upload form instead
         flash("Login successfully ✅")
         return redirect(url_for("upload"))
 
